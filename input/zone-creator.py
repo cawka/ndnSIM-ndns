@@ -33,15 +33,18 @@ class params (object):
 # NS ns.root.
 # ns.root. FH 0 0 /
 
-os.mkdir ("root-ns")
+try:
+    os.mkdir ("root-ns")
+except:
+    pass    
 
 ndns.tools.create_zone.create_zone (params (data_dir="root-ns", 
                                             default_ksk=True, 
                                             mname="ns", rname="root", ttl=3600,
                                             ksk_id="/DNS-ROOT/%00%01", zone="/"))
 
-ndns.tools.add.add (params (data_dir="root-ns", zone="/", rr=".        IN NS ns.root."))
-ndns.tools.add.add (params (data_dir="root-ns", zone="/", rr="ns.root. IN FH 0 0 /"))
+ndns.tools.add.add (params (quiet=True, data_dir="root-ns", zone="/", rr=".        IN NS ns.root.\n" + 
+                                                                         "ns.root. IN FH 0 0 /"))          
 
 # 13 COM server (the same config dir)
 # .com
@@ -78,13 +81,17 @@ os.mkdir ("com-ns")
 ndns.tools.create_zone.create_zone (params (data_dir="com-ns", ksk_id="1", zsk_id="1", zone="/com", 
                                             mname="ns", rname="root", ttl=3600))
 
-ndns.tools.add.add (params (data_dir="root-ns", zone="/",
+ndns.tools.add.add (params (quiet=True, data_dir="root-ns", zone="/",
                             rr=ndns.tools.zone_info.zone_info (params (data_dir="com-ns", ksk=True, zone="/com"))))
 
 for i in xrange (1,14):
-    ndns.tools.add.add (params (data_dir="root-ns", zone="/",    rr="com. IN NS ns%d.com." % i))
-    ndns.tools.add.add (params (data_dir="com-ns",  zone="/com", rr="com. IN NS ns%d.com." % i))
+    ndns.tools.add.add (params (quiet=True, data_dir="root-ns", zone="/",    rr=("com. IN NS ns%d.com.\n" % i) +
+                                                                                ("ns%d.com. IN FH 0 0 /\n" % i)))
+    ndns.tools.add.add (params (quiet=True, data_dir="com-ns",  zone="/com", rr=("@ IN NS ns%d\n" % i) +
+                                                                                ("ns%d IN FH 0 0 /\n" % i)))
 
+ndns.ndns_session ("root-ns").commit ()
+    
 # 1 "server" for all SLDs
 #
 # for sld in com:
@@ -108,11 +115,10 @@ for sld,sub in domains['com'].iteritems ():
         pbar.next ()
         continue
     
-    if sub['__count__'] < 5:
+    if sub['__count__'] < 100:
         pbar.next ()
         continue
     
-    sys.stdout.write('.')
     try:
         dns_domain = str("%s.com" % sld)
         ndn_domain = str("/com/%s" % sld)
@@ -122,15 +128,16 @@ for sld,sub in domains['com'].iteritems ():
                                                     zone=ndn_domain,
                                                     mname="ns", rname="root", ttl=3600))
         
-        ndns.tools.add.add (params (commit=False, 
+        ndns.tools.add.add (params (commit=False, quiet=True,
                                     data_dir="com-ns", zone="/com",
                                     rr=ndns.tools.zone_info.zone_info (params (data_dir="slds-ns", ksk=True, zone=ndn_domain))))
         
-        ndns.tools.add.add (params (commit=False, 
-                                    data_dir="com-ns",  zone="/com",     rr="%s. IN NS ns1.%s." % (dns_domain, dns_domain)))
-        ndns.tools.add.add (params (commit=False, 
+        ndns.tools.add.add (params (commit=False, quiet=True,
+                                    data_dir="com-ns",  zone="/com",     rr=("%s. IN NS ns1.%s.\n" % (dns_domain, dns_domain)) +
+                                                                            ("ns1.%s. IN FH 0 0 /sld-ns\n" % dns_domain)))
+        ndns.tools.add.add (params (commit=False, quiet=True,
                                     data_dir="slds-ns", zone=ndn_domain, rr="@ IN NS ns1\n"
-                                                                            "ns1 IN FH 0 0 /sld-ns"))
+                                                                            "ns1 IN FH 0 0 /sld-ns\n"))
         
         
         if count > 500:
@@ -144,3 +151,7 @@ for sld,sub in domains['com'].iteritems ():
     except:
         pbar.next ()
         continue
+
+ndns.ndns_session ("root-ns").commit ()
+ndns.ndns_session ("com-ns").commit ()
+ndns.ndns_session ("slds-ns").commit ()
