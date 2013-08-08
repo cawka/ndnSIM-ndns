@@ -12,6 +12,8 @@
 import sys
 sys.path = ["/usr/local/lib/ndnSIM", "/usr/local/lib/ndns"] + sys.path
 
+import time_
+
 import functools
 import logging
 import sys
@@ -49,21 +51,17 @@ class Daemon (NdnsDaemon):
 
 root_daemon = Daemon (data_dir = "input/root-ns", scopes = [], enable_dyndns = False)
 
-# def run_daemon ():
-#     daemon = NdnsDaemon (
-#     daemon.run ()
-
 def run_dig (context):
-    dig (Params (simple=True, raw=True, zone="/DNS/com/NS"), sys.stdout)
+    dig (Params (simple=True, raw=True, verbose=True, zone="/DNS/com/NS"), sys.stdout)
 
 Simulator.ScheduleWithContext (topology.getContext (0), Seconds (0.0), root_daemon.Run)
 Simulator.ScheduleWithContext (topology.getContext (0), Seconds (8.0), root_daemon.Shutdown)
 
 Simulator.ScheduleWithContext (topology.getContext (4), Seconds (1.0), run_dig)
 
-# Simulator.Stop (Seconds (10))
-# Simulator.Run ()
-# Simulator.Destroy ()
+Simulator.Stop (Seconds (10))
+Simulator.Run ()
+Simulator.Destroy ()
 
-import visualizer
-visualizer.start ()
+# import visualizer
+# visualizer.start ()
