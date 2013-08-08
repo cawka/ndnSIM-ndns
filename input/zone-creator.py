@@ -15,13 +15,7 @@ import ndns.tools.create_zone
 import ndns.tools.add
 import ndns.tools.zone_info
 
-class params (object):
-    def __init__ (self, **kwargs):
-        for param in kwargs:
-            self.__setattr__ (param, kwargs.get (param))
-
-    def __getattr__ (self, name):
-        return None
+from ndns.tools import Params as params
 
 # TOTAL servers:
 # 1 (root)

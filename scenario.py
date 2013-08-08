@@ -12,82 +12,54 @@
 import sys
 sys.path = ["/usr/local/lib/ndnSIM", "/usr/local/lib/ndns"] + sys.path
 
-from ns.core import *
-from ns.network import *
-from ns.ndnSIM import *
-from ns.point_to_point import *
+import functools
+import logging
+import sys
 
-class MyApp:
-    def __init__ (self):
-        self.datas = 0
-        self.timeouts = 0
+import topology
+from ns.core import Simulator, Seconds
 
-    def StartApplication (self, app):
-        print "START APP"
-        self.face = ndn.ApiFace (app.GetNode ())
+from ndns.tools import Params
+from ndns.tools.ndns_daemon import NdnsDaemon
+from ndns.tools.dig import dig
 
-        Simulator.Schedule (Seconds (1), self.TestSending)
+######################################################################
+######################################################################
 
-    def StopApplication (self, app):
-        print "STOP APP"
+_LOG = logging.getLogger ("")
+_LOG.setLevel (logging.DEBUG)
 
-        self.face = None
+_handler = logging.StreamHandler (sys.stderr)
+_handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s', '%H:%M:%S'))
+_LOG.addHandler (_handler)
 
-    def TestSending (self):
-        interest = ndn.Interest ()
-        interest.SetName (ndn.Name ("/test"))
-        interest.SetInterestLifetime (Seconds (1.0))
+######################################################################
+######################################################################
 
-        def onData (interest, data):
-            print "data"
-            pass
+topology.getSimpleTopology (5)
 
-        def onTimeout (interest):
-            print "timeout"
-            pass
+class Daemon (NdnsDaemon):
+    def Run (self, context):
+        self.run ()
+        # super (self, Daemon).run ()
 
-        self.face.ExpressInterest (interest, onData, onTimeout)
+    def Shutdown (self, context):
+        # super (self, Daemon).shutdown ()
+        self.terminate ()
 
-Config.SetDefault ("ns3::PointToPointNetDevice::DataRate", StringValue ("1Mbps"))
-Config.SetDefault ("ns3::PointToPointChannel::Delay", StringValue ("10ms"))
-Config.SetDefault ("ns3::DropTailQueue::MaxPackets", StringValue ("20"))
+root_daemon = Daemon (data_dir = "input/root-ns", scopes = [], enable_dyndns = False)
 
-Config.SetDefault ("ns3::ndn::Face::WireFormat", StringValue ("1"))
+# def run_daemon ():
+#     daemon = NdnsDaemon (
+#     daemon.run ()
 
-# Creating nodes
-nodes = NodeContainer ()
-nodes.Create (3)
+def run_dig (context):
+    dig (Params (simple=True, raw=True, zone="/DNS/com/NS"), sys.stdout)
 
-# Connecting nodes using two links
-p2p = PointToPointHelper ()
-p2p.Install (nodes.Get (0), nodes.Get (1))
-p2p.Install (nodes.Get (1), nodes.Get (2))
+Simulator.ScheduleWithContext (topology.getContext (0), Seconds (0.0), root_daemon.Run)
+Simulator.ScheduleWithContext (topology.getContext (0), Seconds (8.0), root_daemon.Shutdown)
 
-# // Install NDN stack on all nodes
-ndnHelper = ndn.StackHelper ()
-ndnHelper.SetDefaultRoutes (True)
-ndnHelper.InstallAll ()
-
-# Installing applications
-
-appHelper = ndn.AppHelper ("ns3::CallbackBasedApp")
-apps = appHelper.Install (nodes.Get (0))
-app = apps.Get (0)
-
-pyapp = MyApp ()
-app.SetOnStartCallback (pyapp.StartApplication)
-app.SetOnStopCallback (pyapp.StopApplication)
-
-# Producer
-appHelper = ndn.AppHelper ("ns3::ndn::Producer");
-# Producer will reply to all requests starting with /prefix
-appHelper.SetPrefix ("/");
-appHelper.SetAttribute ("Postfix", StringValue ("/unique/postfix"))
-appHelper.SetAttribute ("PayloadSize", StringValue("1024"))
-apps = appHelper.Install (nodes.Get (2))
-
-
-apps.Stop (Seconds (4.0))
+Simulator.ScheduleWithContext (topology.getContext (4), Seconds (1.0), run_dig)
 
 # Simulator.Stop (Seconds (10))
 # Simulator.Run ()
