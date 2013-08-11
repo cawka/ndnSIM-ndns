@@ -7,6 +7,9 @@ import sys
 import json
 import dns.name
 
+print "Disabled"
+exit (1)
+
 f = gzip.open ("time-name-type.trace.gz")
 qout = gzip.open ("time-name-type-sanitized.trace.gz", "wt")
 

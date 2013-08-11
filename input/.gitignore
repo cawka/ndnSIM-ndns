@@ -2,3 +2,4 @@ root-ns
 com-ns
 slds-ns
 *.gz
+run-*/dig-*
