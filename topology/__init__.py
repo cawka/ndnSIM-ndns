@@ -32,7 +32,9 @@ def getSimpleTopology (numNodes = 3):
     
     # // Install NDN stack on all nodes
     ndnHelper = ndn.StackHelper ()
-    ndnHelper.SetDefaultRoutes (True)
+    # ndnHelper.SetDefaultRoutes (True)
+    ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::BestRoute", "","", "","", "","", "","")
+    ndnHelper.SetContentStore ("ns3::ndn::cs::Lru::Freshness", "MaxSize", "100", "","", "","", "","")
     ndnHelper.InstallAll ()
 
     return nodes

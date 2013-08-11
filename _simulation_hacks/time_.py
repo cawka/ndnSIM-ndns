@@ -3,7 +3,7 @@ import sys
 import time as _time
 
 sys.modules['_time'] = sys.modules['time']
-sys.modules['time'] = sys.modules['time_']
+sys.modules['time'] = sys.modules['_simulation_hacks.time_']
 
 import ns.core
 
