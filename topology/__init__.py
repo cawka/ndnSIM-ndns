@@ -71,7 +71,8 @@ def getClientsGatewaysBackbones ():
 
 def getNode (node):
     if isinstance (node, str):
-        return Names.Find (node)
+        raise TypeError ("Not supported type [%s]" % type (node))
+        # return Names.FindNode (node)
     elif isinstance (node, int):
         return NodeList.GetNode (node)
     elif isinstance (node, Node):
@@ -83,7 +84,8 @@ def getContext (node):
     if isinstance (node, int):
         return node
     elif isinstance (node, str):
-        return Names.Find (node).GetId ()
+        raise TypeError ("Not supported type [%s]" % type (node))
+        # return Names.FindNode (node).GetId ()
     elif isinstance (node, Node):
         return node.GetId ()
     else:

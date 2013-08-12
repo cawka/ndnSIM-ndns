@@ -44,10 +44,17 @@ class StreamHandler (object):
     def setFormatter (self, *kw, **kwargs):
         pass
 
+    def addFilter (self, *kw, **kwargs):
+        pass
+
 class Formatter (object):
     def __init__ (self, *kw, **kwargs):
         pass
-    
+
+class Filter (object):
+    def __init__ (self, *kw, **kwargs):
+        pass
+
 nologger = Logger ()
     
 def getLogger (*kw, **kwargs):
@@ -70,3 +77,8 @@ def error (*kw, **kwargs):
 
 def critical (*kw, **kwargs):
     pass
+
+def setLoggerClass (*kw, **kwargs):
+    pass
+
+
