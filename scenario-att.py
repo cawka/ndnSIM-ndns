@@ -157,6 +157,11 @@ class Digger (object):
         COUNTER += 1
         if (COUNTER % 500 == 0):
             print "Procesed: [%d]" % COUNTER
+
+        if COUNTER > 100000:
+            print "(SPECIAL) Done with [%s]" % self.inputTraceName
+            return
+
         # _LOG.debug (sld_zone)
         self.cachingQuery.expressQueryForZoneFh (self.face, self.onPreResult, self.onError, sld_zone, verify = False)
 

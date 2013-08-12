@@ -46,7 +46,7 @@ def getLargeTopology ():
     ndnHelper = ndn.StackHelper ()
     # ndnHelper.SetDefaultRoutes (True)
     ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::BestRoute", "","", "","", "","", "","")
-    ndnHelper.SetContentStore ("ns3::ndn::cs::Lru::Freshness", "MaxSize", "100", "","", "","", "","")
+    ndnHelper.SetContentStore ("ns3::ndn::cs::Lru::Freshness", "MaxSize", "1000", "","", "","", "","")
     ndnHelper.InstallAll ()
 
     topologyReader.ApplyOspfMetric ();
