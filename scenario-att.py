@@ -40,9 +40,9 @@ import gzip
 from clint.textui import progress
 
 import topology
-from ns.core import Simulator, Seconds, Config, IntegerValue, Time, Names
-from ns.network import NodeContainer
-from ns.ndnSIM import ndn as ndnSIM
+from ns.core import Simulator, Seconds, Config, IntegerValue, BooleanValue, Time, Names
+from ns.network import NodeContainer, NodeList
+from ns.ndnSIM import L2RateTracer, ndn as ndnSIM
 import ndn
 
 from ndns.tools import Params
@@ -61,13 +61,22 @@ _LOG.setLevel (logging.DEBUG)
 logging.getLogger ("ndn.nre").setLevel (logging.ERROR)
 
 _handler = logging.StreamHandler (sys.stderr)
-_handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s')) #, '%H:%M:%S'))
+
+class Formatter (object):
+    def format (self, record):
+        print "%f\t%s" % (Simulator.Now ().ToDouble (Time.S), record.msg)
+x = Formatter ()
+        
+# _handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s')) #, '%H:%M:%S'))
+_handler.setFormatter (x)
 _LOG.addHandler (_handler)
 
 ######################################################################
 ######################################################################
 
 Config.SetGlobal ("RngRun", IntegerValue (args.run))
+
+Config.SetDefault ("ns3::ndn::ForwardingStrategy::DetectRetransmissions", BooleanValue (False))
 
 topology.getLargeTopology ()
 
@@ -104,51 +113,82 @@ class Daemon (NdnsDaemon):
 ##########################################################################
 ##########################################################################
 COUNTER = 0
+SCHEDULED = 0
+
+def getCacheSize ():
+    totalSize = 0
+    for i in xrange (0, NodeList.GetNNodes ()):
+        node = NodeList.GetNode (i)
+        store = ndnSIM.ContentStore.GetContentStore (node)
+        totalSize += store.GetSize ()
+
+    return totalSize
+
+def test ():
+    print "%s Total Cache size: [%d]" % (Simulator.Now ().ToDouble (Time.S), getCacheSize ())
+    # print x
+
+    Simulator.Schedule (Seconds (100.0), test)
+
 
 class Digger (object):
     def __init__ (self, node, inputTrace):
         self.node = node
-        self.cachingQuery = ndns.query.CachingQuery ()
-        self.policy = copy.copy (ndns.TrustPolicy)
+        self.cachingQuery = ndns.query.NonCachingQuery ()
+        # ndns.query.CachingQuery ()
+        self.policy = 1
+        # copy.copy (ndns.TrustPolicy)
         self.inputTrace = gzip.open (inputTrace)
         self.inputTraceName = inputTrace
 
         Simulator.ScheduleWithContext (self.node.GetId (), Seconds (0), self.init)
         print "Digger on [%s]" % Names.FindName (self.node)
 
+        self.scheduledEvents = 0
+
     def init (self, context):
         self.face = ndn.Face ()
         self.scheduleNext ()
 
     def scheduleNext (self, *kw, **kwargs):
+        global SCHEDULED
         try:
-            line = self.inputTrace.next ()
-            time, domain, rrtype, not_used = re.split("\s+", line)
+            while self.scheduledEvents < 100:
+                line = self.inputTrace.next ()
+                time, domain, rrtype, not_used = re.split("\s+", line)
 
-            rel_time = Seconds (float (time)) - Simulator.Now () - Seconds (1273795499)
-            Simulator.Schedule (rel_time, self.Run, domain)
+                rel_time = Seconds (10*(float (time)-1273795499)) - Simulator.Now ()
+                if rel_time.IsNegative ():
+                    print "TIME IS NEGATIVE. WRONG!!!"
+                    exit (1)
+                Simulator.Schedule (rel_time, self.Run, domain)
+                
+                self.scheduledEvents += 1
+                SCHEDULED += 1
 
         except StopIteration:
             print "Done with [%s]" % self.inputTraceName
 
 
     def onResult (self, result, msg):
+        self.scheduledEvents -= 1
         self.scheduleNext ()
 
     def onError (self, errmsg, *k, **kw):
+        self.scheduledEvents -= 1
         self.scheduleNext ()
 
-    def onPreResult (self, result, msg):
-        def _onVerify (data, status):
-            if status:
-                self.onResult (result, msg)
-            else:
-                self.onError ("Got answer, but it cannot be verified")
+    # def onPreResult (self, result, msg):
+    #     def _onVerify (data, status):
+    #         if status:
+    #             self.onResult (result, msg)
+    #         else:
+    #             self.onError ("Got answer, but it cannot be verified")
 
-        self.policy.verifyAsync (self.face, result, _onVerify)
+    #     self.policy.verifyAsync (self.face, result, _onVerify)
 
     def Run (self, domain, *kw, **kwargs):
-        global COUNTER
+        global COUNTER, SCHEDULED
 
         sld_zone = ndn.Name (ndnify (domain.lower ())[0:2])
         if len(sld_zone) != 2:
@@ -156,14 +196,14 @@ class Digger (object):
 
         COUNTER += 1
         if (COUNTER % 500 == 0):
-            print "Procesed: [%d]" % COUNTER
+            print "%s Procesed: [%d], total scheduled: [%d], cache size: [%d]" % (Simulator.Now ().ToDouble (Time.S), COUNTER, SCHEDULED, getCacheSize ())
 
-        if COUNTER > 100000:
+        if COUNTER > 500000:
             print "(SPECIAL) Done with [%s]" % self.inputTraceName
             return
 
         # _LOG.debug (sld_zone)
-        self.cachingQuery.expressQueryForZoneFh (self.face, self.onPreResult, self.onError, sld_zone, verify = False)
+        self.cachingQuery.expressQueryForZoneFh (self.face, self.onResult, self.onError, sld_zone, verify = False)
 
 ##########################################################################
 ##########################################################################
@@ -193,15 +233,20 @@ for digger in glob.glob ("%s/dig-*" % input_data):
 ##########################################################################
 ##########################################################################
 
+    
 routing.CalculateRoutes ()
 
 try: os.makedirs ("results/att")
 except: pass
-ndnSIM.CsTracer.InstallAll ("results/att/cache-run-%d.txt" % args.run, Seconds (3600));
+ndnSIM.CsTracer.InstallAll ("results/att/cache-run-%d.txt" % args.run, Seconds (10));
 
-ndnSIM.L3RateTracer.Install (NodeContainer (ns_nodes, digger_nodes), "results/att/packets-run-%d.txt" % args.run, Seconds (3600));
+ndnSIM.L3RateTracer.Install (NodeContainer (ns_nodes, digger_nodes), "results/att/packets-run-%d.txt" % args.run, Seconds (10));
 
-Simulator.Stop (Seconds (3600.01))
+# L2RateTracer.InstallAll ("drop-trace.txt", Seconds (800));
+
+# Simulator.Schedule (Seconds (100.0), test)
+
+Simulator.Stop (Seconds (1000.01))
 
 Simulator.Run ()
 Simulator.Destroy ()

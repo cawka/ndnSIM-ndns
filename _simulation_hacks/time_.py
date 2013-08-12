@@ -30,3 +30,6 @@ def sleep ():
 
 def strftime (*kw, **kwargs):
     return _time.strftime (*kw, **kwargs)
+
+def mktime (*kw, **kwargs):
+    return _time.mktime (*kw, **kwargs)

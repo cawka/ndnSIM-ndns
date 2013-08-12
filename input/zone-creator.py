@@ -104,47 +104,47 @@ pbar = progress.bar(range(len(domains['com'])))
 
 count = 0
 
-for sld,sub in domains['com'].iteritems ():
-    if (sld == "__count__"):
-        pbar.next ()
-        continue
+# for sld,sub in domains['com'].iteritems ():
+#     if (sld == "__count__"):
+#         pbar.next ()
+#         continue
     
-    if sub['__count__'] < 20:
-        pbar.next ()
-        continue
+#     if sub['__count__'] < 20:
+#         pbar.next ()
+#         continue
     
-    try:
-        dns_domain = str("%s.com" % sld)
-        ndn_domain = str("/com/%s" % sld)
+#     try:
+#         dns_domain = str("%s.com" % sld)
+#         ndn_domain = str("/com/%s" % sld)
 
-        # ndns.tools.create_zone.create_zone (params (commit=False, 
-        #                                             data_dir="slds-ns", ksk_id="1", zsk_id="1", 
-        #                                             zone=ndn_domain,
-        #                                             mname="ns", rname="root", ttl=3600))
+#         # ndns.tools.create_zone.create_zone (params (commit=False, 
+#         #                                             data_dir="slds-ns", ksk_id="1", zsk_id="1", 
+#         #                                             zone=ndn_domain,
+#         #                                             mname="ns", rname="root", ttl=3600))
         
-        # ndns.tools.add.add (params (commit=False, quiet=True,
-        #                             data_dir="com-ns", zone="/com",
-        #                             rr=ndns.tools.zone_info.zone_info (params (data_dir="slds-ns", ksk=True, zone=ndn_domain))))
+#         # ndns.tools.add.add (params (commit=False, quiet=True,
+#         #                             data_dir="com-ns", zone="/com",
+#         #                             rr=ndns.tools.zone_info.zone_info (params (data_dir="slds-ns", ksk=True, zone=ndn_domain))))
         
-        ndns.tools.add.add (params (commit=False, quiet=True,
-                                    data_dir="com-ns",  zone="/com",     rr=("%s. IN NS ns1.%s.\n" % (dns_domain, dns_domain)) +
-                                                                            ("ns1.%s. IN FH 0 0 /sld-ns\n" % dns_domain)))
-        # ndns.tools.add.add (params (commit=False, quiet=True,
-        #                             data_dir="slds-ns", zone=ndn_domain, rr="@ IN NS ns1\n"
-        #                                                                     "ns1 IN FH 0 0 /sld-ns\n"))
+#         ndns.tools.add.add (params (commit=False, quiet=True,
+#                                     data_dir="com-ns",  zone="/com",     rr=("%s. IN NS ns1.%s.\n" % (dns_domain, dns_domain)) +
+#                                                                             ("ns1.%s. IN FH 0 0 /sld-ns\n" % dns_domain)))
+#         # ndns.tools.add.add (params (commit=False, quiet=True,
+#         #                             data_dir="slds-ns", zone=ndn_domain, rr="@ IN NS ns1\n"
+#         #                                                                     "ns1 IN FH 0 0 /sld-ns\n"))
         
         
-        if count > 500:
-            ndns.ndns_session ("com-ns").commit ()
-            ndns.ndns_session ("slds-ns").commit ()
-            count = 0
+#         if count > 500:
+#             ndns.ndns_session ("com-ns").commit ()
+#             ndns.ndns_session ("slds-ns").commit ()
+#             count = 0
         
-        count += 1
-        pbar.next ()
+#         count += 1
+#         pbar.next ()
 
-    except:
-        pbar.next ()
-        continue
+#     except:
+#         pbar.next ()
+#         continue
 
 ndns.ndns_session ("root-ns").commit ()
 ndns.ndns_session ("com-ns").commit ()
