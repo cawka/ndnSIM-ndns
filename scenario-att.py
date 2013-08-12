@@ -134,8 +134,8 @@ def test ():
 class Digger (object):
     def __init__ (self, node, inputTrace):
         self.node = node
-        self.cachingQuery = ndns.query.NonCachingQuery ()
-        # ndns.query.CachingQuery ()
+        # self.cachingQuery = ndns.query.NonCachingQuery ()
+        self.cachingQuery = ndns.query.CachingQuery ()
         self.policy = 1
         # copy.copy (ndns.TrustPolicy)
         self.inputTrace = gzip.open (inputTrace)

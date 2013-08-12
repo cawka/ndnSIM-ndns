@@ -8,7 +8,7 @@ suppressPackageStartupMessages (library(doBy))
 
 source ("graphs/graph-style.R")
 
-run = 1
+run = 2
 folder = 'att'
 
 name = paste (sep="", "results/", folder, "/packets-", "run-", run, ".txt")
@@ -56,9 +56,14 @@ g.ns = g.ns + theme_custom ()
 ## print (g.ns)
 ## gglot
 
+## g.dig = ggplot(dig, aes(x=Node, y=Requests, color=Type, fill=Type))
+## g.dig = g.dig + geom_bar(position='dodge', stat='identity')
+## g.dig = g.dig + theme_custom ()
+
 g.dig = ggplot(dig, aes(x=Requests, color=Type, fill=Type))
 g.dig = g.dig + geom_histogram(position='dodge')
 g.dig = g.dig + theme_custom ()
+
 
 ## print (g.dig)
 
