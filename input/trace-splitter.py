@@ -63,8 +63,13 @@ for i in xrange (0, args.clients):
     out = gzip.open ("run-%d/dig-%d.txt.gz" % (args.run, client_ids[i]), 'wt')
     outputs.append (out)
 
+limit = 0
 for line in f:
     time, domain, rrtype, not_used = re.split("\s+", line)
 
     out = outputs [randVar.GetInteger (0, len(outputs)-1)]
     out.write ("%s\t%s\t%s\n" % (time, domain, rrtype))
+
+    limit += 1
+    if limit > 10000:
+        break

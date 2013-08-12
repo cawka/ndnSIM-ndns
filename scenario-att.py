@@ -66,7 +66,7 @@ class Formatter (object):
     def format (self, record):
         print "%f\t%s" % (Simulator.Now ().ToDouble (Time.S), record.msg)
 x = Formatter ()
-        
+
 # _handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s')) #, '%H:%M:%S'))
 _handler.setFormatter (x)
 _LOG.addHandler (_handler)
@@ -134,8 +134,8 @@ def test ():
 class Digger (object):
     def __init__ (self, node, inputTrace):
         self.node = node
-        # self.cachingQuery = ndns.query.NonCachingQuery ()
-        self.cachingQuery = ndns.query.CachingQuery ()
+        self.cachingQuery = ndns.query.NonCachingQuery ()
+        # self.cachingQuery = ndns.query.CachingQuery ()
         self.policy = 1
         # copy.copy (ndns.TrustPolicy)
         self.inputTrace = gzip.open (inputTrace)
@@ -162,7 +162,7 @@ class Digger (object):
                     print "TIME IS NEGATIVE. WRONG!!!"
                     exit (1)
                 Simulator.Schedule (rel_time, self.Run, domain)
-                
+
                 self.scheduledEvents += 1
                 SCHEDULED += 1
 
@@ -233,7 +233,7 @@ for digger in glob.glob ("%s/dig-*" % input_data):
 ##########################################################################
 ##########################################################################
 
-    
+
 routing.CalculateRoutes ()
 
 try: os.makedirs ("results/att")
