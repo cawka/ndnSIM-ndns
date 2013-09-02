@@ -8,7 +8,7 @@ suppressPackageStartupMessages (library(doBy))
 
 source ("graphs/graph-style.R")
 
-run = 4
+run = 6
 folder = 'att'
 
 name = paste (sep="", "results/", folder, "/packets-", "run-", run, ".txt")

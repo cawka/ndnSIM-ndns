@@ -37,7 +37,6 @@ import os
 import glob
 import re
 import gzip
-from clint.textui import progress
 
 import topology
 from ns.core import Simulator, Seconds, Config, IntegerValue, BooleanValue, Time, Names
@@ -47,6 +46,7 @@ import ndn
 
 from ndns.tools import Params
 from ndns.tools.ndns_daemon import NdnsDaemon
+from ndns.tools.ndns_daemon_sim import NdnsDaemonSim
 from ndns.tools.dig import dig
 from ndns.dnsifier import ndnify
 
@@ -62,13 +62,14 @@ logging.getLogger ("ndn.nre").setLevel (logging.ERROR)
 
 _handler = logging.StreamHandler (sys.stderr)
 
-class Formatter (object):
-    def format (self, record):
-        print "%f\t%s" % (Simulator.Now ().ToDouble (Time.S), record.msg)
-x = Formatter ()
+# class Formatter (object):
+#     def format (self, record):
+#         pass
+#         # print "%f\t%s" % (Simulator.Now ().ToDouble (Time.S), record.msg)
+# x = Formatter ()
 
-# _handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s')) #, '%H:%M:%S'))
-_handler.setFormatter (x)
+_handler.setFormatter (logging.Formatter('%(asctime)s %(name)s [%(levelname)s]  %(message)s')) #, '%H:%M:%S'))
+# _handler.setFormatter (x)
 _LOG.addHandler (_handler)
 
 ######################################################################
@@ -88,15 +89,16 @@ routing.InstallAll ()
 ##########################################################################
 ##########################################################################
 
-class Daemon (NdnsDaemon):
+class Daemon (object):
     def __init__ (self, node, daemonType):
         self.node = node
         if daemonType == "root":
-            super (Daemon, self).__init__ (data_dir = "input/root-ns", scopes = [], enable_dyndns = False)
+            self._daemon = NdnsDaemon (data_dir = "input/root-ns", scopes = [], enable_dyndns = False)
             routing.AddOrigin ("/DNS", self.node)
             print "ROOT NS on [%s]" % Names.FindName (self.node)
         elif daemonType == "com":
-            super (Daemon, self).__init__ (data_dir = "input/com-ns", scopes = [], enable_dyndns = False)
+            self._daemon = NdnsDaemonSim (data_dir = "input/com-ns", scopes = [], enable_dyndns = False)
+
             routing.AddOrigin ("/com/DNS", self.node)
             print "COM NS on [%s]" % Names.FindName (self.node)
         else:
@@ -105,10 +107,10 @@ class Daemon (NdnsDaemon):
         Simulator.ScheduleWithContext (self.node.GetId (), Seconds (0), self.Run)
 
     def Run (self, context):
-        super (Daemon, self).run ()
+        self._daemon.run ()
 
     def Shutdown (self, context):
-        super (Daemon, self).terminate ()
+        self._daemon.terminate ()
 
 ##########################################################################
 ##########################################################################
@@ -124,18 +126,25 @@ def getCacheSize ():
 
     return totalSize
 
+def getPitSize ():
+    totalSize = 0
+    for i in xrange (0, NodeList.GetNNodes ()):
+        node = NodeList.GetNode (i)
+        store = ndnSIM.Pit.GetPit (node)
+        totalSize += store.GetSize ()
+
+    return totalSize
+
 def test ():
     print "%s Total Cache size: [%d]" % (Simulator.Now ().ToDouble (Time.S), getCacheSize ())
-    # print x
-
     Simulator.Schedule (Seconds (100.0), test)
 
 
 class Digger (object):
     def __init__ (self, node, inputTrace):
         self.node = node
-        self.cachingQuery = ndns.query.NonCachingQuery ()
-        # self.cachingQuery = ndns.query.CachingQuery ()
+        # self.cachingQuery = ndns.query.NonCachingQuery ()
+        self.cachingQuery = ndns.query.CachingQuery ()
         self.policy = 1
         # copy.copy (ndns.TrustPolicy)
         self.inputTrace = gzip.open (inputTrace)
@@ -153,14 +162,15 @@ class Digger (object):
     def scheduleNext (self, *kw, **kwargs):
         global SCHEDULED
         try:
-            while self.scheduledEvents < 100:
+            while self.scheduledEvents < 1:
                 line = self.inputTrace.next ()
                 time, domain, rrtype, not_used = re.split("\s+", line)
 
                 rel_time = Seconds (10*(float (time)-1273795499)) - Simulator.Now ()
                 if rel_time.IsNegative ():
-                    print "TIME IS NEGATIVE. WRONG!!!"
-                    exit (1)
+                    # print "TIME IS NEGATIVE. WRONG!!!"
+                    rel_time = Seconds (0.001)
+                    # exit (1)
                 Simulator.Schedule (rel_time, self.Run, domain)
 
                 self.scheduledEvents += 1
@@ -175,6 +185,8 @@ class Digger (object):
         self.scheduleNext ()
 
     def onError (self, errmsg, *k, **kw):
+        print "SHOULD NOT EVER HAPPEN"
+        exit (1)
         self.scheduledEvents -= 1
         self.scheduleNext ()
 
@@ -195,8 +207,8 @@ class Digger (object):
             self.scheduleNext ()
 
         COUNTER += 1
-        if (COUNTER % 500 == 0):
-            print "%s Procesed: [%d], total scheduled: [%d], cache size: [%d]" % (Simulator.Now ().ToDouble (Time.S), COUNTER, SCHEDULED, getCacheSize ())
+        if (COUNTER % 1000 == 0):
+            print "%s Procesed: [%d], total scheduled: [%d], cache size: [%d], pit size: [%d]" % (Simulator.Now ().ToDouble (Time.S), COUNTER, SCHEDULED, getCacheSize (), getPitSize ())
 
         if COUNTER > 500000:
             print "(SPECIAL) Done with [%s]" % self.inputTraceName
@@ -246,7 +258,7 @@ ndnSIM.L3RateTracer.Install (NodeContainer (ns_nodes, digger_nodes), "results/at
 
 # Simulator.Schedule (Seconds (100.0), test)
 
-Simulator.Stop (Seconds (1000.01))
+Simulator.Stop (Seconds (2000.01))
 
 Simulator.Run ()
 Simulator.Destroy ()
