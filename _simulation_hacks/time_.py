@@ -19,6 +19,9 @@ def localtime (sec = None, sec2 = None):
 
     return _time.localtime (sec)
 
+def mktime (x):
+	return _time.mktime (x)
+
 def asctime(t = None):
     if t is None:
         t = localtime ()
