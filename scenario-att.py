@@ -22,6 +22,9 @@ parser.add_argument('--debug', dest='debug', action='store_true', default=False,
                     help='''Enable logging (otherwise it will be hacked and completely disabled)''')
 parser.add_argument('--run', '-r', dest='run', type=int, default=1,
                     help='''Simulation run (default 1)''')
+parser.add_argument('--cache', dest='cache', default='Lru')
+parser.add_argument('--size', dest='size', default='100')
+
 args = parser.parse_args()
 
 if not args.debug:
@@ -79,7 +82,7 @@ Config.SetGlobal ("RngRun", IntegerValue (args.run))
 
 Config.SetDefault ("ns3::ndn::ForwardingStrategy::DetectRetransmissions", BooleanValue (False))
 
-topology.getLargeTopology ()
+topology.getLargeTopology (args.cache, args.size)
 
 clients, gw, bb = topology.getClientsGatewaysBackbones ()
 
@@ -95,12 +98,12 @@ class Daemon (object):
         if daemonType == "root":
             self._daemon = NdnsDaemon (data_dir = "input/root-ns", scopes = [], enable_dyndns = False)
             routing.AddOrigin ("/DNS", self.node)
-            print "ROOT NS on [%s]" % Names.FindName (self.node)
+            # print "ROOT NS on [%s]" % Names.FindName (self.node)
         elif daemonType == "com":
             self._daemon = NdnsDaemonSim (data_dir = "input/com-ns", scopes = [], enable_dyndns = False)
 
             routing.AddOrigin ("/com/DNS", self.node)
-            print "COM NS on [%s]" % Names.FindName (self.node)
+            # print "COM NS on [%s]" % Names.FindName (self.node)
         else:
             raise TypeError ("daemonType can be either 'root' or 'com' for now")
 
@@ -151,7 +154,7 @@ class Digger (object):
         self.inputTraceName = inputTrace
 
         Simulator.ScheduleWithContext (self.node.GetId (), Seconds (0), self.init)
-        print "Digger on [%s]" % Names.FindName (self.node)
+        # print "Digger on [%s]" % Names.FindName (self.node)
 
         self.scheduledEvents = 0
 
@@ -210,8 +213,8 @@ class Digger (object):
         if (COUNTER % 1000 == 0):
             print "%s Procesed: [%d], total scheduled: [%d], cache size: [%d], pit size: [%d]" % (Simulator.Now ().ToDouble (Time.S), COUNTER, SCHEDULED, getCacheSize (), getPitSize ())
 
-        if COUNTER > 500000:
-            print "(SPECIAL) Done with [%s]" % self.inputTraceName
+        if COUNTER > 1000000:
+            # print "(SPECIAL) Done with [%s]" % self.inputTraceName
             return
 
         # _LOG.debug (sld_zone)
@@ -250,20 +253,11 @@ routing.CalculateRoutes ()
 
 try: os.makedirs ("results/att")
 except: pass
-ndnSIM.CsTracer.InstallAll ("results/att/cache-run-%d.txt" % args.run, Seconds (10));
+ndnSIM.CsTracer.InstallAll ("results/att/cache-run-%d-cache-%s-size-%s.txt" % (args.run, args.cache, args.size), Seconds (10));
 
-ndnSIM.L3RateTracer.Install (NodeContainer (ns_nodes, digger_nodes), "results/att/packets-run-%d.txt" % args.run, Seconds (10));
-
-# L2RateTracer.InstallAll ("drop-trace.txt", Seconds (800));
-
-# Simulator.Schedule (Seconds (100.0), test)
+ndnSIM.L3RateTracer.Install (NodeContainer (ns_nodes, digger_nodes), "results/att/packets-run-%d-cache-%s-size-%s.txt" % (args.run, args.cache, args.size), Seconds (10));
 
 Simulator.Stop (Seconds (2000.01))
 
 Simulator.Run ()
 Simulator.Destroy ()
-
-# # exit (1)
-
-# import visualizer
-# visualizer.start ()
