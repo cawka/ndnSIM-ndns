@@ -37,7 +37,7 @@ def getSimpleTopology (numNodes = 3):
     ndnHelper.SetContentStore ("ns3::ndn::cs::Lru::Freshness", "MaxSize", "100", "","", "","", "","")
     ndnHelper.InstallAll ()
 
-def getLargeTopology ():
+def getLargeTopology (cache = "ns3::ndn::cs::Lru", size = "1000"):
     topologyReader = AnnotatedTopologyReader ("", 1.0)
     topologyReader.SetFileName ("topology/7018.r0.txt")
     topologyReader.Read ()
@@ -46,9 +46,7 @@ def getLargeTopology ():
     ndnHelper = ndn.StackHelper ()
     # ndnHelper.SetDefaultRoutes (True)
     ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::BestRoute", "","", "","", "","", "","")
-    # ndnHelper.SetContentStore ("ns3::ndn::cs::Lru::Freshness", "MaxSize", "1000", "","", "","", "","")
-    ndnHelper.SetContentStore ("ns3::ndn::cs::Lru", "MaxSize", "1000", "","", "","", "","")
-    # ndnHelper.SetContentStore ("ns3::ndn::cs::Nocache", "", "", "","", "","", "","")
+    ndnHelper.SetContentStore (cache, "MaxSize", size, "","", "","", "","")
     ndnHelper.InstallAll ()
 
     topologyReader.ApplyOspfMetric ();
