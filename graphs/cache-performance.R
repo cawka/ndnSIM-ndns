@@ -52,6 +52,7 @@ g = ggplot() +
 dir.create ("graphs/pdfs", showWarnings = FALSE, recursive = TRUE)
 
 pdf = paste(sep='', 'graphs/pdfs/cache-hits-',cache,'-run-',run,'.pdf')
+cat('Writing', pdf,'\n')
 
 pdf (pdf, width=6.5, height=6.5)
 print (g)

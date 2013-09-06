@@ -71,6 +71,9 @@ dir.create ("graphs/pdfs", showWarnings = FALSE, recursive = TRUE)
 pdf.abs = "graphs/pdfs/queries-abs.pdf"
 pdf.rel = "graphs/pdfs/cache-performance-rel.pdf"
 
+cat('Writing', pdf.abs,'\n')
+cat('Writing', pdf.rel,'\n')
+
 pdf (pdf.abs, width=6.5, height=4)
 print (g.abs)
 x = dev.off ()

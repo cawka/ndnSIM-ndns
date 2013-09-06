@@ -108,9 +108,9 @@ class AttNdnsSimulation (Processor):
 
         summary_db = "results/summary-att.db"
         
-        subprocess.call ("rm -f \"%s\"" % summary_db, shell=True)
-        cmd = "sqlite3 -cmd \"create table data (Run text, Cache text, Size text, Node text, Face text, Type text, Packets integer)\" \"%s\" </dev/null" % summary_db
-        subprocess.call (cmd, shell=True)
+        # subprocess.call ("rm -f \"%s\"" % summary_db, shell=True)
+        # cmd = "sqlite3 -cmd \"create table data (Run text, Cache text, Size text, Node text, Face text, Type text, Packets integer)\" \"%s\" </dev/null" % summary_db
+        # subprocess.call (cmd, shell=True)
         
         for cache in self.caches:
             for size in self.sizes:
@@ -119,8 +119,15 @@ class AttNdnsSimulation (Processor):
                     print "Converting %s" % name
 
                     src = "%s.txt" % name
-
-                    cmd = "cat \"%s\" | tail -n +2 | awk -F\"\t\" '{if (NF == 9) {print $1\"|\"$2\"|\"$4\"|\"$5\"|\"$8}}' | sqlite3 -cmd \"create table data_tmp (Time int, Node text, Face text, Type text, Packets real)\" -cmd \".import /dev/stdin data_tmp\" \"%s\"" % (src, summary_db)
+                    try:
+                        cmd = "bzip2 %s" % src
+                        subprocess.call (cmd, shell=True)
+                    except:
+                        pass
+                    
+                    src = "%s.txt.bz2" % name
+                    
+                    cmd = "bzcat \"%s\" | tail -n +2 | awk -F\"\t\" '{if (NF == 9) {print $1\"|\"$2\"|\"$4\"|\"$5\"|\"$8}}' | sqlite3 -cmd \"create table data_tmp (Time int, Node text, Face text, Type text, Packets real)\" -cmd \".import /dev/stdin data_tmp\" \"%s\"" % (src, summary_db)
                     subprocess.call (cmd, shell=True)
 
                     cmd = "sqlite3 -cmd \"create table data_tmp2 as select Time,Node,Face,Type,Packets from data_tmp where Type in ('InInterests','OutInterests','InData','OutData')\" -cmd \"vacuum\" \"%s\"  </dev/null" % summary_db
@@ -129,32 +136,49 @@ class AttNdnsSimulation (Processor):
                     cmd = "sqlite3 -cmd \"insert into data select '%d','%s','%d',Node,Face,Type,sum(Packets) from data_tmp2 group by Node,Face,Type\" -cmd \"drop table data_tmp2\" -cmd \"drop table data_tmp\" -cmd \"vacuum\" \"%s\"  </dev/null" % (run, cache, size, summary_db)
                     subprocess.call (cmd, shell=True)
                     
-                    cmd = "bzip2 %s" % src
+
+        
+        summary2_db = "results/summary-cache-att.db"
+
+        subprocess.call ("rm -f \"%s\"" % summary2_db, shell=True)
+        cmd = "sqlite3 -cmd \"create table data (Run text, Cache text, Size text, Node text, Type text, Packets integer)\" \"%s\" </dev/null" % summary2_db
+        subprocess.call (cmd, shell=True)
+
+        for cache in self.caches:
+            for size in self.sizes:
+                for run in self.runs:
+                    name = "results/att/cache-run-%d-cache-%s-size-%d" % (run, cache, size)
+                    print "Converting %s" % name
+                    
+                    src = "%s.txt" % name
+                    try:
+                        cmd = "bzip2 %s" % src
+                        subprocess.call (cmd, shell=True)
+                    except:
+                        pass
+                    
+                    src = "%s.txt.bz2" % name
+
+                    cmd = "bzcat \"%s\" | tail -n +2 | awk -F\"\t\" '{if (NF == 4) {print $1\"|\"$2\"|\"$3\"|\"$4}}' | sqlite3 -cmd \"create table data_tmp (Time int, Node text, Type text, Packets real)\" -cmd \".import /dev/stdin data_tmp\" \"%s\"" % (src, summary2_db)
                     subprocess.call (cmd, shell=True)
-
+                    
+                    cmd = "sqlite3 -cmd \"insert into data select '%d','%s','%d',Node,Type,sum(Packets) from data_tmp group by Node,Type\" -cmd \"drop table data_tmp\" -cmd \"vacuum\" \"%s\"  </dev/null" % (run, cache, size, summary2_db)
+                    subprocess.call (cmd, shell=True)
+        
     def graph (self):
-        pass
-        # print "GRAPH NOT YET AVAILABLE"
+        print "Building graphs"
 
-        # for algorithm in self.algorithms:
-        #     for topology in self.topologies:
-        #         for evil in self.evils:
-        #             # print "Scenario [%s], topology [%s], evils [%d], run [%d]" % (prefix, topology, evil, run)
-        #             cmdline = ["./graphs/rates.R",
-        #                        algorithm,
-        #                        topology,
-        #                        str(evil),
-        #                        ",".join([str(run) for run in self.runs]),
-        #                        self.folder,
-        #                        str(self.good),
-        #                        self.producer,
-        #                        ]
-        #             job = SimulationJob (cmdline)
-        #             pool.put (job)
+        cmdline = ["./graphs/requests-to-com.R"]
+        job = SimulationJob (cmdline)
+        pool.put (job)
+        
+        cmdline = ["./graphs/cache-performance.R"]
+        job = SimulationJob (cmdline)
+        pool.put (job)
 
 try:
     AttNdnsSimulation (caches = ["Lru", "Lfu", "Random"],
-                       sizes = [10, 100, 1000, 10000, 1000000],
+                       sizes = [10, 100, 1000, 10000, 100000, 1000000],
                        runs = [1, 2, 3, 4, 5]).run ()
 
 finally:
