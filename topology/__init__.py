@@ -20,6 +20,8 @@ Config.SetDefault ("ns3::DropTailQueue::MaxPackets", StringValue ("20"))
 
 Config.SetGlobal ("ndn::WireFormat", IntegerValue (ndn.Wire.WIRE_FORMAT_CCNB))
 
+topologyReader = None
+
 def getSimpleTopology (numNodes = 3):
     # Creating nodes
     nodes = NodeContainer ()
@@ -38,6 +40,8 @@ def getSimpleTopology (numNodes = 3):
     ndnHelper.InstallAll ()
 
 def getLargeTopology (cache = "Lru", size = "1000"):
+    global topologyReader
+    
     topologyReader = AnnotatedTopologyReader ("", 1.0)
     topologyReader.SetFileName ("topology/7018.r0.txt")
     topologyReader.Read ()
@@ -51,6 +55,11 @@ def getLargeTopology (cache = "Lru", size = "1000"):
 
     topologyReader.ApplyOspfMetric ();
 
+def saveTopology ():
+    global topologyReader
+    
+    topologyReader.SaveTopology ("topologies/topo-with-positions.txt")
+    
 def getClientsGatewaysBackbones ():
     leaves = NodeContainer ()
     gw = NodeContainer ()
