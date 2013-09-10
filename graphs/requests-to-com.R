@@ -44,7 +44,7 @@ g.abs = ggplot(ns.summary, aes(x=Size, y=ReceivedQueries, fill=Cache)) +
                   color = I('black')) +
     scale_fill_brewer ("Cache type", palette = "PuOr") +
     scale_y_continuous(labels = comma_format()) +
-    scale_x_discrete(labels = paste(sep='', levels(ns.summary$Size), '\n(', round(as.numeric(levels(ns.summary$Size))/783595 * 100, 1), '%)')) +
+    ## scale_x_discrete(labels = paste(sep='', levels(ns.summary$Size), '\n(', round(as.numeric(levels(ns.summary$Size))/783595 * 100, 1), '%)')) +
     xlab ("Maximum cache size, packets (cache size vs. query volume, %)") +
     ylab ("Number of received queries by authoritative name servers") + 
     ## scale_color (legend = F) +
@@ -61,8 +61,8 @@ g.rel = ggplot(dig.and.ns.summary, aes(x=Size, y=1-Ratio, fill=Cache)) +
                   color = I('black')) +
     scale_fill_brewer ("Cache type", palette = "PuOr") +
     scale_y_continuous(labels = percent_format()) +
-    scale_x_discrete(labels = paste(sep='', levels(ns.summary$Size), '\n(', round(as.numeric(levels(ns.summary$Size))/783595 * 100, 1), '%)')) +
-    xlab ("Maximum cache size, packets (cache size vs. query volume, %)") +
+    ## scale_x_discrete(labels = paste(sep='', levels(ns.summary$Size), '\n(', round(as.numeric(levels(ns.summary$Size))/783595 * 100, 1), '%)')) +
+    xlab ("Maximum cache size, packets") +
     ylab ("Percent of queries satisfied by NDN caches") + 
     theme_custom ()
 
@@ -74,10 +74,10 @@ pdf.rel = "graphs/pdfs/cache-performance-rel.pdf"
 cat('Writing', pdf.abs,'\n')
 cat('Writing', pdf.rel,'\n')
 
-pdf (pdf.abs, width=6.5, height=4)
+pdf (pdf.abs, width=6, height=4)
 print (g.abs)
 x = dev.off ()
 
-pdf (pdf.rel, width=6.5, height=4)
+pdf (pdf.rel, width=6, height=4)
 print (g.rel)
 x = dev.off ()

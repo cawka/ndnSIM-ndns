@@ -29,8 +29,8 @@ if (m>42000) { m = round(m+500, -3) }
 br = round (seq(0, sqrt(m), length.out = 5) * seq(0, sqrt(m), length.out = 5))
 
 g = ggplot() +
-    geom_point (data=x2, aes(x=-y, y=x), color='black', size=0.3) +
-    geom_point (data=subset(x2, Type=="CacheHits" & Packets>0), aes(x=-y, y=x, size=Packets, color=Packets)) +
+    geom_point (data=x2, aes(x=y, y=x), color='black', size=0.3) +
+    geom_point (data=subset(x2, Type=="CacheHits" & Packets>0), aes(x=y, y=x, size=Packets, color=Packets)) +
     scale_color_gradient ("Cache hits", low = "#a5daff", high = "#001088", trans = 'sqrt',
                           limits=c(1, m), breaks=br) +
     scale_size_continuous ("Cache hits", trans = 'sqrt',
@@ -54,7 +54,7 @@ dir.create ("graphs/pdfs", showWarnings = FALSE, recursive = TRUE)
 pdf = paste(sep='', 'graphs/pdfs/cache-hits-',cache,'-run-',run,'.pdf')
 cat('Writing', pdf,'\n')
 
-pdf (pdf, width=6.5, height=6.5)
+pdf (pdf, width=6, height=6)
 print (g)
 x = dev.off ()
 } # run
